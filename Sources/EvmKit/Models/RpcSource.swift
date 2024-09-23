@@ -79,6 +79,10 @@ public extension RpcSource {
     static func bscTestNet() -> RpcSource {
         .http(urls: [URL(string: "https://data-seed-prebsc-1-s1.binance.org:8545")!], auth: nil)
     }
+    
+    static func xdcRpcHttp() -> RpcSource {
+        .http(urls: [URL(string: "https://rpc.xinfin.network")!], auth: nil)
+    }
 
     static func polygonRpcHttp() -> RpcSource {
         .http(urls: [URL(string: "https://polygon-rpc.com")!], auth: nil)
