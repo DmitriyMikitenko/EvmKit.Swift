@@ -45,6 +45,15 @@ public extension Chain {
             isEIP1559Supported: false
         )
     }
+    
+    static var xdc: Chain {
+        Chain(
+            id: 50,
+            coinType: 60,
+            syncInterval: 15,
+            isEIP1559Supported: false
+        )
+    }
 
     static var polygon: Chain {
         Chain(
