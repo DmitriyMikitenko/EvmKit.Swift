@@ -57,6 +57,13 @@ public extension TransactionSource {
             type: .etherscan(apiBaseUrl: "https://api.bscscan.com", txBaseUrl: "https://bscscan.com", apiKey: apiKey)
         )
     }
+    
+    static func xdcscan(apiKey: String) -> TransactionSource {
+        TransactionSource(
+            name: "xdc.blocksscan.io",
+            type: .etherscan(apiBaseUrl: "https://xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKey: apiKey)
+        )
+    }
 
     static func bscscanTestNet(apiKey: String) -> TransactionSource {
         TransactionSource(
