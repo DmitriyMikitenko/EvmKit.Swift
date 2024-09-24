@@ -58,10 +58,17 @@ public extension TransactionSource {
         )
     }
     
-    static func xdcscan(apiKey: String) -> TransactionSource {
+    static func xdcBlocksScan(apiKey: String) -> TransactionSource {
         TransactionSource(
             name: "xdc.blocksscan.io",
             type: .etherscan(apiBaseUrl: "https://xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKey: apiKey)
+        )
+    }
+    
+    static func xdcXinfinExplorer(apiKey: String) -> TransactionSource {
+        TransactionSource(
+            name: "explorer.xinfin.network",
+            type: .etherscan(apiBaseUrl: "https://explorer.xinfin.network", txBaseUrl: "https://explorer.xinfin.network", apiKey: apiKey)
         )
     }
 
