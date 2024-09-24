@@ -27,8 +27,17 @@ class EtherscanTransactionProvider {
         guard let map = json as? [String: Any] else {
             throw RequestError.invalidResponse
         }
+        
+        guard let rawStatus = map["status"] else {
+            throw RequestError.invalidStatus
+        }
 
-        guard let status = map["status"] as? String else {
+        let status: String
+        if let statusInt = rawStatus as? Int {
+            status = String(statusInt)
+        } else if let statusString = rawStatus as? String {
+            status = statusString
+        } else {
             throw RequestError.invalidStatus
         }
 
