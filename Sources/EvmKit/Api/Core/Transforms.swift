@@ -82,17 +82,32 @@ struct HexBigUIntTransform: TransformType {
     }
 }
 
+//struct StringIntTransform: TransformType {
+//    func transformFromJSON(_ value: Any?) -> Int? {
+//        guard let string = value as? String else {
+//            return nil
+//        }
+//
+//        return Int(string)
+//    }
+//
+//    func transformToJSON(_: Int?) -> String? {
+//        fatalError("transformToJSON(_:) has not been implemented")
+//    }
+//}
+
 struct StringIntTransform: TransformType {
     func transformFromJSON(_ value: Any?) -> Int? {
-        guard let string = value as? String else {
-            return nil
+        if let string = value as? String {
+            return Int(string)
+        } else if let number = value as? Int {
+            return number
         }
-
-        return Int(string)
+        return nil
     }
 
-    func transformToJSON(_: Int?) -> String? {
-        fatalError("transformToJSON(_:) has not been implemented")
+    func transformToJSON(_ value: Int?) -> String? {
+        return value.map { String($0) }
     }
 }
 
