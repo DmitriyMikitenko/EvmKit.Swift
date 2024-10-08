@@ -119,10 +119,12 @@ struct StringOrIntToTimestampTransform: TransformType {
             
             if let date = dateFormatter.date(from: stringValue) {
                 return Int(date.timeIntervalSince1970)
-            } else {
-                print("Unable to parse date from string: \(stringValue)") 
-                return nil
             }
+            if let intValue = Int(stringValue) {
+                return intValue
+            }
+            print("Unable to parse date or integer from string: \(stringValue)")
+            return nil
         } else if let intValue = value as? Int {
             return intValue
         }
