@@ -27,7 +27,7 @@ extension EthereumTransactionSyncer: ITransactionSyncer {
         let initial = lastBlockNumber == 0
 
         do {
-            let transactions = try await provider.transactions(startBlock: 1)//lastBlockNumber + 1)
+            let transactions = try await provider.transactions(startBlock: lastBlockNumber + 1)
 
             handle(providerTransactions: transactions)
 
