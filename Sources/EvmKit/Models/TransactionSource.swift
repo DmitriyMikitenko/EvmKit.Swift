@@ -61,7 +61,7 @@ public extension TransactionSource {
     static func xdcBlocksScan(apiKey: String) -> TransactionSource {
         TransactionSource(
             name: "xdc.blocksscan.io",
-            type: .etherscan(apiBaseUrl: "https://xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api-xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKey: apiKey)
         )
     }
     
