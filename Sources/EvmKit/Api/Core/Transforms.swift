@@ -111,6 +111,29 @@ struct StringIntTransform: TransformType {
     }
 }
 
+struct StringOrIntToTimestampTransform: TransformType {
+    func transformFromJSON(_ value: Any?) -> Int? {
+        if let stringValue = value as? String {
+            let dateFormatter = ISO8601DateFormatter()
+            if let date = dateFormatter.date(from: stringValue) {
+                return Int(date.timeIntervalSince1970)
+            } else {
+                return nil
+            }
+        } else if let intValue = value as? Int {
+            return intValue
+        }
+        return nil
+    }
+
+    func transformToJSON(_ value: Int?) -> String? {
+        guard let timestamp = value else { return nil }
+        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        let dateFormatter = ISO8601DateFormatter()
+        return dateFormatter.string(from: date)
+    }
+}
+
 struct StringBigUIntTransform: TransformType {
     func transformFromJSON(_ value: Any?) -> BigUInt? {
         guard let string = value as? String else {

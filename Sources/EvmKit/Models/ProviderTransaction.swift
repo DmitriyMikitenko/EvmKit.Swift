@@ -22,7 +22,7 @@ public struct ProviderTransaction: ImmutableMappable {
 
     public init(map: Map) throws {
         blockNumber = try map.value("blockNumber", using: StringIntTransform()) as Int
-        timestamp = try map.value("timeStamp", using: StringIntTransform()) as Int
+        timestamp = try map.value("timeStamp", using: StringOrIntToTimestampTransform()) as Int
         hash = try map.value("hash", using: HexDataTransform()) as Data
         nonce = try map.value("nonce", using: StringIntTransform()) as Int
         blockHash = try? map.value("blockHash", using: HexDataTransform()) as Data?
