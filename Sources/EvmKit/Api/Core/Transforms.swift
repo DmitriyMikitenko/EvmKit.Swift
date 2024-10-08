@@ -115,9 +115,12 @@ struct StringOrIntToTimestampTransform: TransformType {
     func transformFromJSON(_ value: Any?) -> Int? {
         if let stringValue = value as? String {
             let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            
             if let date = dateFormatter.date(from: stringValue) {
                 return Int(date.timeIntervalSince1970)
             } else {
+                print("Unable to parse date from string: \(stringValue)") 
                 return nil
             }
         } else if let intValue = value as? Int {
