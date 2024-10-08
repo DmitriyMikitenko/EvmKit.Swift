@@ -34,7 +34,7 @@ public struct ProviderTransaction: ImmutableMappable {
         gasPrice = try map.value("gasPrice", using: StringIntTransform()) as Int
         isError = 0//try? map.value("isError", using: StringIntTransform()) as Int?
         txReceiptStatus = try? map.value("txreceipt_status", using: StringIntTransform()) as Int?
-        input = try map.value("input", using: HexDataTransform()) as Data
+        input =  Data()//(try? map.value("input", using: HexDataTransform()) as Data) ?? Data()
         cumulativeGasUsed = try? map.value("cumulativeGasUsed", using: StringIntTransform()) as Int?
         gasUsed = try? map.value("gasUsed", using: StringIntTransform()) as Int?
     }
