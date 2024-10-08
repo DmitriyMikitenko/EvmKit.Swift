@@ -21,8 +21,9 @@ public struct ProviderTransaction: ImmutableMappable {
     let gasUsed: Int?
 
     public init(map: Map) throws {
-        blockNumber = try map.value("blockNumber", using: StringIntTransform()) as Int
-        timestamp = 0//try map.value("timeStamp", using: StringOrIntToTimestampTransform()) as Int
+        blockNumber = try map.value("blockNumber", using: StringIntTransform()) as Int        
+        timestamp = StringOrIntToTimestampTransform().transformFromJSON(map.JSON["timeStamp"]) ?? 0
+        //try map.value("timeStamp", using: StringOrIntToTimestampTransform()) as Int
         hash = try map.value("hash", using: HexDataTransform()) as Data
         nonce = try map.value("nonce", using: StringIntTransform()) as Int
         blockHash = try? map.value("blockHash", using: HexDataTransform()) as Data?
@@ -32,15 +33,9 @@ public struct ProviderTransaction: ImmutableMappable {
         value = try map.value("value", using: StringBigUIntTransform()) as BigUInt
         gasLimit = try map.value("gas", using: StringIntTransform()) as Int
         gasPrice = try map.value("gasPrice", using: StringIntTransform()) as Int
-        isError = try? map.value("isError") as Int?//try? map.value("isError", using: StringIntTransform()) as Int?
+        isError = try? map.value("isError") as Int?
         txReceiptStatus = try? map.value("txreceipt_status", using: StringIntTransform()) as Int?
-        
-        
         input = (try? map.value("input") as String?)?.hs.hexData ?? Data()
-        //(try? map.value("input", using: HexDataTransform()) as Data) ?? Data()
-        
-        
-//        hexString.hs.hexData
         cumulativeGasUsed = try? map.value("cumulativeGasUsed", using: StringIntTransform()) as Int?
         gasUsed = try? map.value("gasUsed", using: StringIntTransform()) as Int?
     }
