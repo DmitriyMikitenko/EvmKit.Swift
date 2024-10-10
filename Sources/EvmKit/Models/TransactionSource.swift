@@ -15,109 +15,109 @@ public struct TransactionSource {
     }
 
     public enum SourceType {
-        case etherscan(apiBaseUrl: String, txBaseUrl: String, apiKey: String)
+        case etherscan(apiBaseUrl: String, txBaseUrl: String, apiKeys: ApiKeys)
     }
 }
 
 public extension TransactionSource {
-    private static func etherscan(apiSubdomain: String, txSubdomain: String?, apiKey: String) -> TransactionSource {
+    private static func etherscan(apiSubdomain: String, txSubdomain: String?, apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "etherscan.io",
-            type: .etherscan(apiBaseUrl: "https://\(apiSubdomain).etherscan.io", txBaseUrl: "https://\(txSubdomain.map { "\($0)." } ?? "")etherscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://\(apiSubdomain).etherscan.io", txBaseUrl: "https://\(txSubdomain.map { "\($0)." } ?? "")etherscan.io", apiKeys: apiKeys)
         )
     }
 
-    static func ethereumEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api", txSubdomain: nil, apiKey: apiKey)
+    static func ethereumEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api", txSubdomain: nil, apiKeys: apiKeys)
     }
 
-    static func sepoliaEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api-sepolia", txSubdomain: "sepolia", apiKey: apiKey)
+    static func sepoliaEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api-sepolia", txSubdomain: "sepolia", apiKeys: apiKeys)
     }
 
-    static func ropstenEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api-ropsten", txSubdomain: "ropsten", apiKey: apiKey)
+    static func ropstenEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api-ropsten", txSubdomain: "ropsten", apiKeys: apiKeys)
     }
 
-    static func kovanEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api-kovan", txSubdomain: "kovan", apiKey: apiKey)
+    static func kovanEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api-kovan", txSubdomain: "kovan", apiKeys: apiKeys)
     }
 
-    static func rinkebyEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api-rinkeby", txSubdomain: "rinkeby", apiKey: apiKey)
+    static func rinkebyEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api-rinkeby", txSubdomain: "rinkeby", apiKeys: apiKeys)
     }
 
-    static func goerliEtherscan(apiKey: String) -> TransactionSource {
-        etherscan(apiSubdomain: "api-goerli", txSubdomain: "goerli", apiKey: apiKey)
+    static func goerliEtherscan(apiKeys: ApiKeys) -> TransactionSource {
+        etherscan(apiSubdomain: "api-goerli", txSubdomain: "goerli", apiKeys: apiKeys)
     }
 
-    static func bscscan(apiKey: String) -> TransactionSource {
+    static func bscscan(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "bscscan.com",
-            type: .etherscan(apiBaseUrl: "https://api.bscscan.com", txBaseUrl: "https://bscscan.com", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.bscscan.com", txBaseUrl: "https://bscscan.com", apiKeys: apiKeys)
         )
     }
     
-    static func xdcBlocksScan(apiKey: String) -> TransactionSource {
+    static func xdcBlocksScan(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "xdc.blocksscan.io",
-            type: .etherscan(apiBaseUrl: "https://api-xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api-xdc.blocksscan.io", txBaseUrl: "https://xdc.blocksscan.io", apiKeys: apiKeys)
         )
     }
     
-    static func xdcXinfinExplorer(apiKey: String) -> TransactionSource {
+    static func xdcXinfinExplorer(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "explorer.xinfin.network",
-            type: .etherscan(apiBaseUrl: "https://explorer.xinfin.network", txBaseUrl: "https://explorer.xinfin.network", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://explorer.xinfin.network", txBaseUrl: "https://explorer.xinfin.network", apiKeys: apiKeys)
         )
     }
 
-    static func bscscanTestNet(apiKey: String) -> TransactionSource {
+    static func bscscanTestNet(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "testnet.bscscan.com",
-            type: .etherscan(apiBaseUrl: "https://api-testnet.bscscan.com", txBaseUrl: "https://testnet.bscscan.com", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api-testnet.bscscan.com", txBaseUrl: "https://testnet.bscscan.com", apiKeys: apiKeys)
         )
     }
 
-    static func polygonscan(apiKey: String) -> TransactionSource {
+    static func polygonscan(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "polygonscan.com",
-            type: .etherscan(apiBaseUrl: "https://api.polygonscan.com", txBaseUrl: "https://polygonscan.com", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.polygonscan.com", txBaseUrl: "https://polygonscan.com", apiKeys: apiKeys)
         )
     }
 
-    static func snowtrace(apiKey: String) -> TransactionSource {
+    static func snowtrace(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "snowtrace.io",
-            type: .etherscan(apiBaseUrl: "https://api.snowtrace.io", txBaseUrl: "https://snowtrace.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.snowtrace.io", txBaseUrl: "https://snowtrace.io", apiKeys: apiKeys)
         )
     }
 
-    static func optimisticEtherscan(apiKey: String) -> TransactionSource {
+    static func optimisticEtherscan(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "optimistic.etherscan.io",
-            type: .etherscan(apiBaseUrl: "https://api-optimistic.etherscan.io", txBaseUrl: "https://optimistic.etherscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api-optimistic.etherscan.io", txBaseUrl: "https://optimistic.etherscan.io", apiKeys: apiKeys)
         )
     }
 
-    static func arbiscan(apiKey: String) -> TransactionSource {
+    static func arbiscan(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "arbiscan.io",
-            type: .etherscan(apiBaseUrl: "https://api.arbiscan.io", txBaseUrl: "https://arbiscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.arbiscan.io", txBaseUrl: "https://arbiscan.io", apiKeys: apiKeys)
         )
     }
 
-    static func gnosis(apiKey: String) -> TransactionSource {
+    static func gnosis(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "gnosisscan.io",
-            type: .etherscan(apiBaseUrl: "https://api.gnosisscan.io", txBaseUrl: "https://gnosisscan.io", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.gnosisscan.io", txBaseUrl: "https://gnosisscan.io", apiKeys: apiKeys)
         )
     }
 
-    static func fantom(apiKey: String) -> TransactionSource {
+    static func fantom(apiKeys: ApiKeys) -> TransactionSource {
         TransactionSource(
             name: "ftmscan.com",
-            type: .etherscan(apiBaseUrl: "https://api.ftmscan.com", txBaseUrl: "https://ftmscan.com", apiKey: apiKey)
+            type: .etherscan(apiBaseUrl: "https://api.ftmscan.com", txBaseUrl: "https://ftmscan.com", apiKeys: apiKeys)
         )
     }
 }

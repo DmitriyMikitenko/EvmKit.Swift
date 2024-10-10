@@ -6,20 +6,21 @@ import HsToolKit
 class EtherscanTransactionProvider {
     private let networkManager: NetworkManager
     private let baseUrl: String
-    private let apiKey: String
+    private var apiKeys: ApiKeys
     private let address: Address
 
-    init(baseUrl: String, apiKey: String, address: Address, logger: Logger) {
+    init(baseUrl: String, apiKeys: ApiKeys, address: Address, logger: Logger) {
         networkManager = NetworkManager(interRequestInterval: 1, logger: logger)
         self.baseUrl = baseUrl
-        self.apiKey = apiKey
+        self.apiKeys = apiKeys
         self.address = address
     }
 
-    private func fetch(params: [String: Any]) async throws -> [[String: Any]] {
+    private func fetch(params: [String: Any], withNewKey: Bool = false) async throws -> [[String: Any]] {
         let urlString = "\(baseUrl)/api"
 
         var parameters = params
+        let apiKey = withNewKey ? apiKeys.nextKey() : apiKeys.key
         parameters["apikey"] = apiKey
 
         let json = try await networkManager.fetchJson(url: urlString, method: .get, parameters: parameters, responseCacherBehavior: .doNotCache)
@@ -50,9 +51,16 @@ class EtherscanTransactionProvider {
             if message == "No transactions found" {
                 return []
             }
-
-            if message == "NOTOK", let result, result.contains("Max rate limit reached") {
-                throw RequestError.rateLimitExceeded
+            
+            if let result,
+               (message == "NOTOK"
+                || result.lowercased().contains("max")
+                || result.lowercased().contains("rate limit")
+                || result.lowercased().contains("too many")) {
+                if #available(macOS 10.15, *) {
+                    try await Task.sleep(nanoseconds: 3_000_000_000)
+                }
+                return try await fetch(params: params, withNewKey: true)
             }
 
             throw RequestError.responseError(message: message, result: result)
@@ -75,7 +83,7 @@ extension EtherscanTransactionProvider: ITransactionProvider {
             "startblock": startBlock,
             "sort": "desc",
         ]
-
+        
         let array = try await fetch(params: params)
         return array.compactMap { try? ProviderTransaction(JSON: $0) }
     }
