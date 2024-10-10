@@ -9,7 +9,7 @@ public struct ApiKeys {
     private let keys: [String]
     private var currentIndex = 0
     
-    init(keys: [String]) {
+    public init(keys: [String]) {
         self.keys = keys
     }
     
