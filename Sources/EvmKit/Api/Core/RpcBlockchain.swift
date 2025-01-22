@@ -5,6 +5,7 @@ import HsToolKit
 
 class RpcBlockchain {
     private var tasks = Set<AnyTask>()
+    private let tasksQueue = DispatchQueue(label: "com.evmKit.tasksQueue")
 
     weak var delegate: IBlockchainDelegate?
 
@@ -33,11 +34,18 @@ class RpcBlockchain {
     }
 
     private func syncLastBlockHeight() {
+        tasksQueue.async { [weak self] in
+            self?.threadSafeSyncLastBlockHeight()
+        }
+    }
+    
+    private func threadSafeSyncLastBlockHeight() {
         Task { [weak self, syncer] in
             let lastBlockHeight = try await syncer.fetch(rpc: BlockNumberJsonRpc())
             self?.onUpdate(lastBlockHeight: lastBlockHeight)
         }.store(in: &tasks)
     }
+
 
     private func onUpdate(lastBlockHeight: Int) {
         storage.save(lastBlockHeight: lastBlockHeight)
@@ -60,7 +68,9 @@ extension RpcBlockchain: IRpcSyncerDelegate {
             syncAccountState()
             syncLastBlockHeight()
         case let .notReady(error):
-            tasks = Set()
+            tasksQueue.async { [weak self] in
+                self?.tasks = Set()
+            }
             syncState = .notSynced(error: error)
         }
     }
@@ -97,7 +107,7 @@ extension RpcBlockchain: IBlockchain {
         }
     }
 
-    func syncAccountState() {
+    func threadSafeSyncAccountState() {
         Task { [weak self, syncer, address] in
             do {
                 async let balance = try syncer.fetch(rpc: GetBalanceJsonRpc(address: address, defaultBlockParameter: .latest))
@@ -119,6 +129,12 @@ extension RpcBlockchain: IBlockchain {
                 }
             }
         }.store(in: &tasks)
+    }
+    
+    func syncAccountState() {
+        tasksQueue.async { [weak self] in
+            self?.threadSafeSyncAccountState()
+        }
     }
 
     var lastBlockHeight: Int? {
