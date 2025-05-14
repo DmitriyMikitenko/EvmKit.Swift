@@ -83,6 +83,10 @@ public extension RpcSource {
     static func xdcRpcHttp() -> RpcSource {
         .http(urls: [URL(string: "https://rpc.xinfin.network")!], auth: nil)
     }
+    
+    static func somniaRpcHttp() -> RpcSource {
+        .http(urls: [URL(string: "https://dream-rpc.somnia.network/")!], auth: nil)
+    }
 
     static func polygonRpcHttp() -> RpcSource {
         .http(urls: [URL(string: "https://polygon-rpc.com")!], auth: nil)

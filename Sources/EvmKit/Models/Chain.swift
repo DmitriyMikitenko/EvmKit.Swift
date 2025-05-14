@@ -54,6 +54,15 @@ public extension Chain {
             isEIP1559Supported: false
         )
     }
+    
+    static var somnia: Chain {
+        Chain(
+            id: 50312,
+            coinType: 60,
+            syncInterval: 15,
+            isEIP1559Supported: false
+        )
+    }
 
     static var polygon: Chain {
         Chain(

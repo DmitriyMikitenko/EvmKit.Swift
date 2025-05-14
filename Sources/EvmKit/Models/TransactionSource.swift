@@ -65,6 +65,13 @@ public extension TransactionSource {
         )
     }
     
+    static func somniaBlocksScan(apiKeys: [String]) -> TransactionSource {
+        TransactionSource(
+            name: "somnia.shannon-explorer",
+            type: .etherscan(apiBaseUrl: "https://shannon-explorer.somnia.network", txBaseUrl: "https://shannon-explorer.somnia.network", apiKeys: ApiKeys(keys: apiKeys))
+        )
+    }
+    
     static func xdcXinfinExplorer(apiKeys: [String]) -> TransactionSource {
         TransactionSource(
             name: "explorer.xinfin.network",
