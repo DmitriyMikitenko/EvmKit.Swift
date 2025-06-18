@@ -154,6 +154,15 @@ public extension Kit {
 
         return RawTransaction(gasPrice: gasPrice, gasLimit: gasLimit, to: address, value: value, data: transactionInput, nonce: resolvedNonce)
     }
+    
+    func encode(rawTx: RawTransaction) -> Data {
+        switch rawTx.gasPrice {
+        case let .legacy(legacyGasPrice):
+            return encodeEip155(rawTransaction: rawTx, legacyGasPrice: legacyGasPrice)
+        case let .eip1559(maxFeePerGas, maxPriorityFeePerGas):
+            return encodeEip1559(rawTransaction: rawTx, maxFeePerGas: maxFeePerGas, maxPriorityFeePerGas: maxPriorityFeePerGas)
+        }
+    }
 
     func nonce(defaultBlockParameter: DefaultBlockParameter) async throws -> Int {
         try await blockchain.nonce(defaultBlockParameter: defaultBlockParameter)
@@ -407,5 +416,51 @@ public extension Kit {
 
     enum RpcSourceError: Error {
         case websocketNotSupported
+    }
+}
+
+extension Kit {
+    func sign(rawTransaction: RawTransaction) throws -> Data {
+        switch rawTransaction.gasPrice {
+        case let .legacy(legacyGasPrice):
+            return encodeEip155(rawTransaction: rawTransaction, legacyGasPrice: legacyGasPrice)
+        case let .eip1559(maxFeePerGas, maxPriorityFeePerGas):
+            return encodeEip1559(rawTransaction: rawTransaction, maxFeePerGas: maxFeePerGas, maxPriorityFeePerGas: maxPriorityFeePerGas)
+        }
+    }
+
+    private func encodeEip155(rawTransaction: RawTransaction, legacyGasPrice: Int) -> Data {
+        var toEncode: [Any] = [
+            rawTransaction.nonce,
+            legacyGasPrice,
+            rawTransaction.gasLimit,
+            rawTransaction.to.raw,
+            rawTransaction.value,
+            rawTransaction.data,
+        ]
+
+        if chain.id != 0 {
+            toEncode.append(contentsOf: [chain.id, 0, 0]) // EIP155
+        }
+
+        return RLP.encode(toEncode)
+//        let rawTransactionHash = Crypto.sha3(encodedData)
+    }
+
+    private func encodeEip1559(rawTransaction: RawTransaction, maxFeePerGas: Int, maxPriorityFeePerGas: Int) -> Data {
+        let toEncode: [Any] = [
+            chain.id,
+            rawTransaction.nonce,
+            maxPriorityFeePerGas,
+            maxFeePerGas,
+            rawTransaction.gasLimit,
+            rawTransaction.to.raw,
+            rawTransaction.value,
+            rawTransaction.data,
+            [],
+        ]
+
+        return RLP.encode(toEncode)
+//        let rawTransactionHash = Crypto.sha3(Data([0x02]) + encodedData)
     }
 }
