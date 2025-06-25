@@ -121,7 +121,7 @@ class TransactionStorage {
 
 extension TransactionStorage {
     func transaction(hash: Data) -> Transaction? {
-        try! dbPool.read { db in
+        try? dbPool.read { db in
             try Transaction
                 .filter(Transaction.Columns.hash == hash)
                 .fetchOne(db)
@@ -129,178 +129,198 @@ extension TransactionStorage {
     }
 
     func transactions(hashes: [Data]) -> [Transaction] {
-        try! dbPool.read { db in
-            try Transaction
-                .filter(hashes.contains(Transaction.Columns.hash))
-                .fetchAll(db)
+        do {
+            return try dbPool.read { db in
+                try Transaction
+                    .filter(hashes.contains(Transaction.Columns.hash))
+                    .fetchAll(db)
+            }
+        } catch {
+            return []
         }
     }
 
     func transactionsBefore(tagQueries: [TransactionTagQuery], hash: Data?, limit: Int?) -> [Transaction] {
-        try! dbPool.read { db in
-            var arguments = [DatabaseValueConvertible]()
-            var whereConditions = [String]()
-            let queries = tagQueries.filter { !$0.isEmpty }
-            var joinClause = ""
+        do {
+            return try dbPool.read { db in
+                var arguments = [DatabaseValueConvertible]()
+                var whereConditions = [String]()
+                let queries = tagQueries.filter { !$0.isEmpty }
+                var joinClause = ""
 
-            if !queries.isEmpty {
-                let tagConditions = queries
-                    .map { (tagQuery: TransactionTagQuery) -> String in
-                        var statements = [String]()
+                if !queries.isEmpty {
+                    let tagConditions = queries
+                        .map { (tagQuery: TransactionTagQuery) -> String in
+                            var statements = [String]()
 
-                        if let type = tagQuery.type {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.type.name)' = ?")
-                            arguments.append(type)
+                            if let type = tagQuery.type {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.type.name)' = ?")
+                                arguments.append(type)
+                            }
+                            if let `protocol` = tagQuery.protocol {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.protocol.name)' = ?")
+                                arguments.append(`protocol`)
+                            }
+                            if let contractAddress = tagQuery.contractAddress {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.contractAddress.name)' = ?")
+                                arguments.append(contractAddress)
+                            }
+                            if let address = tagQuery.address {
+                                statements.append("LOWER(\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.addresses.name)') LIKE ?")
+                                arguments.append("%" + address + "%")
+                            }
+
+                            return "(\(statements.joined(separator: " AND ")))"
                         }
-                        if let `protocol` = tagQuery.protocol {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.protocol.name)' = ?")
-                            arguments.append(`protocol`)
-                        }
-                        if let contractAddress = tagQuery.contractAddress {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.contractAddress.name)' = ?")
-                            arguments.append(contractAddress)
-                        }
-                        if let address = tagQuery.address {
-                            statements.append("LOWER(\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.addresses.name)') LIKE ?")
-                            arguments.append("%" + address + "%")
-                        }
+                        .joined(separator: " OR ")
 
-                        return "(\(statements.joined(separator: " AND ")))"
-                    }
-                    .joined(separator: " OR ")
+                    whereConditions.append(tagConditions)
+                    joinClause = "INNER JOIN \(TransactionTagRecord.databaseTableName) ON \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) = \(TransactionTagRecord.databaseTableName).\(TransactionTagRecord.Columns.transactionHash.name)"
+                }
 
-                whereConditions.append(tagConditions)
-                joinClause = "INNER JOIN \(TransactionTagRecord.databaseTableName) ON \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) = \(TransactionTagRecord.databaseTableName).\(TransactionTagRecord.Columns.transactionHash.name)"
-            }
+                if let fromHash = hash,
+                   let fromTransaction = try Transaction.filter(Transaction.Columns.hash == fromHash).fetchOne(db)
+                {
+                    let transactionIndex = fromTransaction.transactionIndex ?? 0
 
-            if let fromHash = hash,
-               let fromTransaction = try Transaction.filter(Transaction.Columns.hash == fromHash).fetchOne(db)
-            {
-                let transactionIndex = fromTransaction.transactionIndex ?? 0
+                    let fromCondition = """
+                    (
+                     \(Transaction.Columns.timestamp.name) < ? OR
+                         (
+                             \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) = ? AND
+                             \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) < ?
+                         ) OR
+                         (
+                             \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) = ? AND
+                             \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) IS ? AND
+                             \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) < ?
+                         )
+                    )
+                    """
 
-                let fromCondition = """
-                (
-                 \(Transaction.Columns.timestamp.name) < ? OR
-                     (
-                         \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) = ? AND
-                         \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) < ?
-                     ) OR
-                     (
-                         \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) = ? AND
-                         \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) IS ? AND
-                         \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) < ?
-                     )
-                )
+                    arguments.append(fromTransaction.timestamp)
+                    arguments.append(fromTransaction.timestamp)
+                    arguments.append(transactionIndex)
+                    arguments.append(fromTransaction.timestamp)
+                    arguments.append(transactionIndex)
+                    arguments.append(fromTransaction.hash)
+
+                    whereConditions.append(fromCondition)
+                }
+
+                var limitClause = ""
+                if let limit {
+                    limitClause += "LIMIT \(limit)"
+                }
+
+                let orderClause = """
+                ORDER BY \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) DESC,
+                \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) DESC,
+                \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) DESC
                 """
 
-                arguments.append(fromTransaction.timestamp)
-                arguments.append(fromTransaction.timestamp)
-                arguments.append(transactionIndex)
-                arguments.append(fromTransaction.timestamp)
-                arguments.append(transactionIndex)
-                arguments.append(fromTransaction.hash)
+                let whereClause = whereConditions.count > 0 ? "WHERE \(whereConditions.joined(separator: " AND "))" : ""
 
-                whereConditions.append(fromCondition)
+                let sql = """
+                SELECT DISTINCT \(Transaction.databaseTableName).*
+                FROM \(Transaction.databaseTableName)
+                \(joinClause)
+                \(whereClause)
+                \(orderClause)
+                \(limitClause)
+                """
+
+                let rows = try Row.fetchAll(db.makeStatement(sql: sql), arguments: StatementArguments(arguments))
+                return try rows.map { row -> Transaction in
+                    try Transaction(row: row)
+                }
             }
-
-            var limitClause = ""
-            if let limit {
-                limitClause += "LIMIT \(limit)"
-            }
-
-            let orderClause = """
-            ORDER BY \(Transaction.databaseTableName).\(Transaction.Columns.timestamp.name) DESC,
-            \(Transaction.databaseTableName).\(Transaction.Columns.transactionIndex.name) DESC,
-            \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) DESC
-            """
-
-            let whereClause = whereConditions.count > 0 ? "WHERE \(whereConditions.joined(separator: " AND "))" : ""
-
-            let sql = """
-            SELECT DISTINCT \(Transaction.databaseTableName).*
-            FROM \(Transaction.databaseTableName)
-            \(joinClause)
-            \(whereClause)
-            \(orderClause)
-            \(limitClause)
-            """
-
-            let rows = try Row.fetchAll(db.makeStatement(sql: sql), arguments: StatementArguments(arguments))
-            return try rows.map { row -> Transaction in
-                try Transaction(row: row)
-            }
+        } catch {
+            return []
         }
     }
 
     func save(transactions: [Transaction]) {
-        try! dbPool.write { db in
-            for transaction in transactions {
-                try transaction.save(db)
+        do {
+            try dbPool.write { db in
+                for transaction in transactions {
+                    try transaction.save(db)
+                }
             }
+        } catch {
+            print(error)
         }
     }
 
     func pendingTransactions() -> [Transaction] {
-        try! dbPool.read { db in
-            try Transaction
-                .filter(Transaction.Columns.blockNumber == nil && Transaction.Columns.isFailed == false)
-                .fetchAll(db)
+        do {
+            return try dbPool.read { db in
+                try Transaction
+                    .filter(Transaction.Columns.blockNumber == nil && Transaction.Columns.isFailed == false)
+                    .fetchAll(db)
+            }
+        } catch {
+            return []
         }
     }
 
     func pendingTransactions(tagQueries: [TransactionTagQuery]) -> [Transaction] {
-        try! dbPool.read { db in
-            var arguments = [DatabaseValueConvertible]()
-            var whereConditions = [String]()
-            let queries = tagQueries.filter { !$0.isEmpty }
-            var joinClause = ""
+        do {
+            return try dbPool.read { db in
+                var arguments = [DatabaseValueConvertible]()
+                var whereConditions = [String]()
+                let queries = tagQueries.filter { !$0.isEmpty }
+                var joinClause = ""
 
-            if !queries.isEmpty {
-                let tagConditions = queries
-                    .map { (tagQuery: TransactionTagQuery) -> String in
-                        var statements = [String]()
+                if !queries.isEmpty {
+                    let tagConditions = queries
+                        .map { (tagQuery: TransactionTagQuery) -> String in
+                            var statements = [String]()
 
-                        if let type = tagQuery.type {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.type.name)' = ?")
-                            arguments.append(type)
+                            if let type = tagQuery.type {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.type.name)' = ?")
+                                arguments.append(type)
+                            }
+                            if let `protocol` = tagQuery.protocol {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.protocol.name)' = ?")
+                                arguments.append(`protocol`)
+                            }
+                            if let contractAddress = tagQuery.contractAddress {
+                                statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.contractAddress.name)' = ?")
+                                arguments.append(contractAddress)
+                            }
+
+                            if let address = tagQuery.address {
+                                statements.append("LOWER(\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.addresses.name)') LIKE ?")
+                                arguments.append("%" + address + "%")
+                            }
+
+                            return "(\(statements.joined(separator: " AND ")))"
                         }
-                        if let `protocol` = tagQuery.protocol {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.protocol.name)' = ?")
-                            arguments.append(`protocol`)
-                        }
-                        if let contractAddress = tagQuery.contractAddress {
-                            statements.append("\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.contractAddress.name)' = ?")
-                            arguments.append(contractAddress)
-                        }
+                        .joined(separator: " OR ")
 
-                        if let address = tagQuery.address {
-                            statements.append("LOWER(\(TransactionTagRecord.databaseTableName).'\(TransactionTagRecord.Columns.addresses.name)') LIKE ?")
-                            arguments.append("%" + address + "%")
-                        }
+                    whereConditions.append(tagConditions)
+                    joinClause = "INNER JOIN \(TransactionTagRecord.databaseTableName) ON \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) = \(TransactionTagRecord.databaseTableName).\(TransactionTagRecord.Columns.transactionHash.name)"
+                }
 
-                        return "(\(statements.joined(separator: " AND ")))"
-                    }
-                    .joined(separator: " OR ")
+                whereConditions.append("\(Transaction.databaseTableName).\(Transaction.Columns.blockNumber.name) IS NULL")
 
-                whereConditions.append(tagConditions)
-                joinClause = "INNER JOIN \(TransactionTagRecord.databaseTableName) ON \(Transaction.databaseTableName).\(Transaction.Columns.hash.name) = \(TransactionTagRecord.databaseTableName).\(TransactionTagRecord.Columns.transactionHash.name)"
+                let whereClause = whereConditions.count > 0 ? "WHERE \(whereConditions.joined(separator: " AND "))" : ""
+
+                let sql = """
+                SELECT \(Transaction.databaseTableName).*
+                FROM \(Transaction.databaseTableName)
+                \(joinClause)
+                \(whereClause)
+                """
+
+                let rows = try Row.fetchAll(db.makeStatement(sql: sql), arguments: StatementArguments(arguments))
+                return try rows.map { row -> Transaction in
+                    try Transaction(row: row)
+                }
             }
-
-            whereConditions.append("\(Transaction.databaseTableName).\(Transaction.Columns.blockNumber.name) IS NULL")
-
-            let whereClause = whereConditions.count > 0 ? "WHERE \(whereConditions.joined(separator: " AND "))" : ""
-
-            let sql = """
-            SELECT \(Transaction.databaseTableName).*
-            FROM \(Transaction.databaseTableName)
-            \(joinClause)
-            \(whereClause)
-            """
-
-            let rows = try Row.fetchAll(db.makeStatement(sql: sql), arguments: StatementArguments(arguments))
-            return try rows.map { row -> Transaction in
-                try Transaction(row: row)
-            }
+        } catch {
+            return []
         }
     }
 
@@ -313,7 +333,7 @@ extension TransactionStorage {
     }
 
     func lastInternalTransaction() -> InternalTransaction? {
-        try! dbPool.read { db in
+        try? dbPool.read { db in
             try InternalTransaction
                 .filter(InternalTransaction.Columns.blockNumber != nil)
                 .order(Transaction.Columns.blockNumber.desc)
@@ -322,24 +342,36 @@ extension TransactionStorage {
     }
 
     func internalTransactions() -> [InternalTransaction] {
-        try! dbPool.read { db in
-            try InternalTransaction.fetchAll(db)
+        do {
+            return try dbPool.read { db in
+                try InternalTransaction.fetchAll(db)
+            }
+        } catch {
+            return []
         }
     }
 
     func internalTransactions(hashes: [Data]) -> [InternalTransaction] {
-        try! dbPool.read { db in
-            try InternalTransaction
-                .filter(hashes.contains(InternalTransaction.Columns.hash))
-                .fetchAll(db)
+        do {
+            return try dbPool.read { db in
+                try InternalTransaction
+                    .filter(hashes.contains(InternalTransaction.Columns.hash))
+                    .fetchAll(db)
+            }
+        } catch {
+            return []
         }
     }
 
     func save(internalTransactions: [InternalTransaction]) {
-        try! dbPool.write { db in
-            for internalTransaction in internalTransactions {
-                try internalTransaction.save(db)
+        do {
+            try dbPool.write { db in
+                for internalTransaction in internalTransactions {
+                    try internalTransaction.save(db)
+                }
             }
+        } catch {
+            print(error)
         }
     }
 
@@ -358,10 +390,14 @@ extension TransactionStorage {
     }
 
     func save(tags: [TransactionTagRecord]) {
-        try! dbPool.write { db in
-            for tag in tags {
-                try tag.save(db)
+        do {
+            try dbPool.write { db in
+                for tag in tags {
+                    try tag.save(db)
+                }
             }
+        } catch {
+            print(error)
         }
     }
 }
