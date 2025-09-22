@@ -27,8 +27,8 @@ public extension TransactionSource {
         )
     }
 
-    static func ethereumEtherscan(apiKeys: [String]) -> TransactionSource {
-        etherscan(apiSubdomain: "api", txSubdomain: nil, apiKeys: apiKeys)
+    static func ethereumEtherscan(apiKeys: [String], txSubdomain: String? = nil) -> TransactionSource {
+        etherscan(apiSubdomain: "api", txSubdomain: txSubdomain, apiKeys: apiKeys)
     }
 
     static func sepoliaEtherscan(apiKeys: [String]) -> TransactionSource {
