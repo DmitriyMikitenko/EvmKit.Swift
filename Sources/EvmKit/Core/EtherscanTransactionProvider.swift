@@ -7,13 +7,15 @@ class EtherscanTransactionProvider {
     private let networkManager: NetworkManager
     private let baseUrl: String
     private var apiKeys: ApiKeys
+    private let chainId: Int
     private let address: Address
 
-    init(baseUrl: String, apiKeys: ApiKeys, address: Address, logger: Logger) {
+    init(baseUrl: String, apiKeys: ApiKeys, address: Address, chainId: Int, logger: Logger) {
         networkManager = NetworkManager(interRequestInterval: 1, logger: logger)
         self.baseUrl = baseUrl
         self.apiKeys = apiKeys
         self.address = address
+        self.chainId = chainId
     }
 
     private func fetch(params: [String: Any], withNewKey: Bool = false) async throws -> [[String: Any]] {
@@ -22,6 +24,7 @@ class EtherscanTransactionProvider {
         var parameters = params
         let apiKey = withNewKey ? apiKeys.nextKey() : apiKeys.key
         parameters["apikey"] = apiKey
+        parameters["chainid"] = chainId
 
         let json = try await networkManager.fetchJson(url: urlString, method: .get, parameters: parameters, responseCacherBehavior: .doNotCache)
 
@@ -56,7 +59,8 @@ class EtherscanTransactionProvider {
                (message == "NOTOK"
                 || result.lowercased().contains("max")
                 || result.lowercased().contains("rate limit")
-                || result.lowercased().contains("too many")) {
+                || result.lowercased().contains("too many")
+                || result.contains("limit reached")) {
                 if #available(macOS 10.15, *) {
                     try await Task.sleep(nanoseconds: 3_000_000_000)
                 }
