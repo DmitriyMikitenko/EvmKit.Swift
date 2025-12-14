@@ -82,6 +82,10 @@ extension RpcBlockchain: IRpcSyncerDelegate {
 }
 
 extension RpcBlockchain: IBlockchain {
+    func txHash(rawTransaction: RawTransaction, signature: Signature) -> Data {
+        transactionBuilder.txHash(rawTransaction: rawTransaction, signature: signature)
+    }
+    
     var source: String {
         "RPC \(syncer.source)"
     }

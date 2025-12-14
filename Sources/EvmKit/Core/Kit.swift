@@ -171,6 +171,10 @@ public extension Kit {
     func tagTokens() -> [TagToken] {
         transactionManager.tagTokens()
     }
+    
+    func txHash(rawTransaction: RawTransaction, signature: Signature) -> Data {
+        blockchain.txHash(rawTransaction: rawTransaction, signature: signature)
+    }
 
     func send(rawTransaction: RawTransaction, signature: Signature) async throws -> FullTransaction {
         let transaction = try await blockchain.send(rawTransaction: rawTransaction, signature: signature)

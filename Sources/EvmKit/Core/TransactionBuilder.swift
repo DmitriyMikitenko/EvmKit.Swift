@@ -35,6 +35,10 @@ class TransactionBuilder {
             gasLimit: rawTransaction.gasLimit
         )
     }
+    
+    func txHash(rawTransaction: RawTransaction, signature: Signature?) -> Data {
+        Crypto.sha3(encode(rawTransaction: rawTransaction, signature: signature))
+    }
 
     func encode(rawTransaction: RawTransaction, signature: Signature?) -> Data {
         Self.encode(rawTransaction: rawTransaction, signature: signature, chainId: chainId)

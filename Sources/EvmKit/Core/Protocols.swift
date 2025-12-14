@@ -16,6 +16,7 @@ protocol IBlockchain {
 
     func nonce(defaultBlockParameter: DefaultBlockParameter) async throws -> Int
     func send(rawTransaction: RawTransaction, signature: Signature) async throws -> Transaction
+    func txHash(rawTransaction: RawTransaction, signature: Signature) -> Data
 
     func transactionReceipt(transactionHash: Data) async throws -> RpcTransactionReceipt
     func transaction(transactionHash: Data) async throws -> RpcTransaction
